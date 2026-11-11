@@ -1,7 +1,13 @@
 # Stage 1: Base for building the .NET API
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS base-api
 
-COPY . /source
+WORKDIR /source
+
+# Copy project files first for Docker layer caching
+COPY Directory.Build.props Directory.Packages.props ./
+COPY ImmichFrame.Core/*.csproj ./ImmichFrame.Core/
+COPY ImmichFrame.WebApi/*.csproj ./ImmichFrame.WebApi/
+
 WORKDIR /source/ImmichFrame.WebApi
 
 # Set default architecture argument for multi-arch builds
@@ -10,8 +16,12 @@ ARG VERSION
 
 ENV APP_VERSION=$VERSION
 
-# Restore dependencies with cache
-RUN dotnet restore
+# Restore dependencies with BuildKit cache mount
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet restore
+
+# Copy the rest of the source code
+COPY . /source
 
 # Stage 2: Publish .NET API
 FROM base-api AS publish-api
@@ -20,8 +30,9 @@ ARG TARGETARCH
 ARG VERSION
 ENV APP_VERSION=$VERSION
 
-# Publish the app for the target architecture
-RUN dotnet publish --runtime linux-${TARGETARCH} --self-contained false -p:AssemblyVersion=$VERSION -o /app
+# Publish the app for the target architecture with BuildKit cache mount
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet publish --runtime linux-${TARGETARCH} --self-contained false -p:AssemblyVersion=$VERSION -o /app
 
 # Stage 3: Build frontend with Node.js
 FROM node:22-bookworm-slim AS build-node
@@ -30,8 +41,9 @@ USER node
 WORKDIR /app
 COPY --chown=node:node ./immichFrame.Web/package*.json ./
 
-# Cache npm dependencies
-RUN npm ci
+# Cache npm dependencies with BuildKit cache mount
+RUN --mount=type=cache,id=npm,target=/home/node/.npm,uid=1000,gid=1000 \
+    npm ci
 COPY --chown=node:node ./immichFrame.Web ./
 RUN npm run build && npm prune --omit=dev
 
