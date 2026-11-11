@@ -80,6 +80,7 @@ export type ServerAccountSettings = {
     imagesUntilDate?: string | null;
     albums?: string[] | null;
     excludedAlbums?: string[] | null;
+    excludedAssets?: string[] | null;
     people?: string[] | null;
     tags?: string[] | null;
     rating?: number | null;

@@ -1957,6 +1957,14 @@
             },
             "nullable": true
           },
+          "excludedAssets": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
           "people": {
             "type": "array",
             "items": {

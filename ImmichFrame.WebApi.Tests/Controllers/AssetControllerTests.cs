@@ -64,6 +64,7 @@ namespace ImmichFrame.WebApi.Tests.Controllers
                             ShowArchived = false,
                             Albums = new List<Guid>(),
                             ExcludedAlbums = new List<Guid>(),
+                            ExcludedAssets = new List<Guid>(),
                             People = new List<Guid>()
                         };
 

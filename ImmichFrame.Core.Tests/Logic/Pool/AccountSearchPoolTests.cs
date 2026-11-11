@@ -34,6 +34,7 @@ public class AccountSearchPoolTests
         _settings.SetupGet(s => s.People).Returns(new List<Guid>());
         _settings.SetupGet(s => s.Tags).Returns(new List<string>());
         _settings.SetupGet(s => s.ExcludedAlbums).Returns(new List<Guid>());
+        _settings.SetupGet(s => s.ExcludedAssets).Returns(new List<Guid>());
         _pool = new AccountSearchPool(_cache.Object, _api.Object, _settings.Object);
     }
 
@@ -252,6 +253,51 @@ public class AccountSearchPoolTests
         Assert.That(await pool.GetAssetCount(), Is.EqualTo(7));
 
         _api.Verify(a => a.SearchAssetStatisticsAsync(It.IsAny<StatisticsSearchDto>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task GetAssets_ExcludedAssets_FiltersOutMatchingAssets()
+    {
+        var excludedId = Guid.NewGuid();
+        var allowedId = Guid.NewGuid();
+        _settings.SetupGet(s => s.ExcludedAssets).Returns(new List<Guid> { excludedId });
+
+        _api.Setup(a => a.SearchRandomAsync(It.IsAny<RandomSearchDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<AssetResponseDto>
+            {
+                new() { Id = excludedId },
+                new() { Id = allowedId }
+            });
+
+        var results = (await _pool.GetAssets(2)).ToList();
+
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(results[0].Id, Is.EqualTo(allowedId));
+    }
+
+    [Test]
+    public async Task GetAssets_ExcludedAssets_RefillsBatchWhenPossible()
+    {
+        var excludedId = Guid.NewGuid();
+        var allowedId1 = Guid.NewGuid();
+        var allowedId2 = Guid.NewGuid();
+        _settings.SetupGet(s => s.ExcludedAssets).Returns(new List<Guid> { excludedId });
+
+        var callCount = 0;
+        _api.Setup(a => a.SearchRandomAsync(It.IsAny<RandomSearchDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                callCount++;
+                return callCount == 1
+                    ? new List<AssetResponseDto> { new() { Id = excludedId }, new() { Id = allowedId1 } }
+                    : new List<AssetResponseDto> { new() { Id = allowedId2 } };
+            });
+
+        var results = (await _pool.GetAssets(2)).ToList();
+
+        Assert.That(results.Count, Is.EqualTo(2));
+        Assert.That(results.Select(r => r.Id), Is.EquivalentTo(new[] { allowedId1, allowedId2 }));
+        _api.Verify(a => a.SearchRandomAsync(It.IsAny<RandomSearchDto>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     private void VerifyRandom(Func<RandomSearchDto, bool> match) =>

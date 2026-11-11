@@ -56,6 +56,9 @@
       "ExcludedAlbums": [
         "UUID"
       ],
+      "ExcludedAssets": [
+        "UUID"
+      ],
       "People": [
         "UUID"
       ],

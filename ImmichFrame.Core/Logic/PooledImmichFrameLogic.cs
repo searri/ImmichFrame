@@ -67,16 +67,30 @@ public class PooledImmichFrameLogic : IAccountImmichFrameLogic, IDisposable
         return await _pool.GetAssets(25);
     }
 
-    public async Task<AssetResponseDto> GetAssetInfoById(Guid assetId) => await _immichApi.GetAssetInfoAsync(assetId, null, null);
+    public async Task<AssetResponseDto> GetAssetInfoById(Guid assetId)
+    {
+        EnsureNotExcluded(assetId);
+        return await _immichApi.GetAssetInfoAsync(assetId, null, null);
+    }
 
-    public async Task<IEnumerable<AssetFaceResponseDto>> GetAssetFacesById(Guid assetId) => await _immichApi.GetFacesAsync(assetId);
+    public async Task<IEnumerable<AssetFaceResponseDto>> GetAssetFacesById(Guid assetId)
+    {
+        EnsureNotExcluded(assetId);
+        return await _immichApi.GetFacesAsync(assetId);
+    }
 
-    public async Task<IEnumerable<AlbumResponseDto>> GetAlbumInfoById(Guid assetId) => await _immichApi.GetAllAlbumsAsync(assetId, null, null, null, null);
+    public async Task<IEnumerable<AlbumResponseDto>> GetAlbumInfoById(Guid assetId)
+    {
+        EnsureNotExcluded(assetId);
+        return await _immichApi.GetAllAlbumsAsync(assetId, null, null, null, null);
+    }
 
     public async Task<long> GetTotalAssets() => await _pool.GetAssetCount();
 
     public async Task<AssetResponse> GetAsset(Guid id, AssetTypeEnum? assetType = null, string? rangeHeader = null)
     {
+        EnsureNotExcluded(id);
+
         if (!assetType.HasValue)
         {
             var assetInfo = await _immichApi.GetAssetInfoAsync(id, null, null);
@@ -196,6 +210,14 @@ public class PooledImmichFrameLogic : IAccountImmichFrameLogic, IDisposable
         await WebhookHelper.SendWebhookNotification(notification, _generalSettings.Webhook);
 
     public override string ToString() => $"Account Pool [{_immichApi.BaseUrl}]";
+
+    private void EnsureNotExcluded(Guid id)
+    {
+        if (AccountSettings.ExcludedAssets?.Contains(id) == true)
+        {
+            throw new AssetNotFoundException($"Asset '{id}' is excluded by blocklist.");
+        }
+    }
 
     public void Dispose() => (_apiCache as IDisposable)?.Dispose();
 }

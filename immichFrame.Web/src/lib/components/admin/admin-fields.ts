@@ -174,6 +174,7 @@ export const accountFields: FieldDef<ServerAccountSettings>[] = [
 	{ key: 'imagesUntilDate', label: 'Images until date', type: 'date' },
 	{ key: 'albums', label: 'Albums', type: 'guid-list', help: 'One ID per line.' },
 	{ key: 'excludedAlbums', label: 'Excluded albums', type: 'guid-list', help: 'One ID per line.' },
+	{ key: 'excludedAssets', label: 'Excluded photos', type: 'guid-list', help: 'One ID per line.' },
 	{ key: 'people', label: 'People', type: 'guid-list', help: 'One ID per line.' },
 	{ key: 'tags', label: 'Tags', type: 'list', help: 'One tag per line.' }
 ];

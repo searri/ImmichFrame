@@ -229,4 +229,44 @@ public class MemoryAssetsPoolTests
         _mockImmichApi.VerifyAll();
 
     }
+
+    [Test]
+    public async Task LoadAssets_ExcludedAssets_FiltersOutMatchingAssets()
+    {
+        var excludedId = Guid.NewGuid();
+        var allowedId = Guid.NewGuid();
+
+        var memoryYear = DateTime.Now.Year - 1;
+        var memory = new MemoryResponseDto
+        {
+            Data = new() { Year = memoryYear },
+            Assets = new List<AssetResponseDto>
+            {
+                new()
+                {
+                    Id = excludedId,
+                    Type = AssetTypeEnum.IMAGE,
+                    ExifInfo = new ExifResponseDto { DateTimeOriginal = new DateTime(memoryYear, 1, 1) },
+                    People = new List<PersonResponseDto>()
+                },
+                new()
+                {
+                    Id = allowedId,
+                    Type = AssetTypeEnum.IMAGE,
+                    ExifInfo = new ExifResponseDto { DateTimeOriginal = new DateTime(memoryYear, 1, 1) },
+                    People = new List<PersonResponseDto>()
+                }
+            }
+        };
+
+        _mockAccountSettings.Setup(x => x.ShowVideos).Returns(false);
+        _mockAccountSettings.Setup(x => x.ExcludedAssets).Returns(new List<Guid> { excludedId });
+        _mockImmichApi.Setup(x => x.SearchMemoriesAsync(It.IsAny<DateTimeOffset>(), null, null, null, null, null, null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<MemoryResponseDto> { memory });
+
+        var assets = (await _memoryAssetsPool.GetAssets(10, CancellationToken.None)).ToList();
+
+        Assert.That(assets.Count, Is.EqualTo(1));
+        Assert.That(assets[0].Id, Is.EqualTo(allowedId));
+    }
 }
