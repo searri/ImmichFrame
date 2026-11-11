@@ -226,6 +226,38 @@
 			return;
 		}
 
+		// When imageFill is active on a landscape display, portrait images are
+		// heavily cropped by object-cover, so discard them. The exception is a
+		// pair of portrait images that qualify for splitview (side-by-side layout).
+		if ($configStore.imageFill && isDisplayLandscape()) {
+			while (
+				assetBacklog.length > 0 &&
+				isPortrait(assetBacklog[0]) &&
+				!shouldUseSplitView(assetBacklog)
+			) {
+				assetBacklog.shift();
+			}
+
+			// If filtering emptied the backlog, fetch a fresh batch and filter once more.
+			if (!assetBacklog.length) {
+				await loadAssets();
+				while (
+					assetBacklog.length > 0 &&
+					isPortrait(assetBacklog[0]) &&
+					!shouldUseSplitView(assetBacklog)
+				) {
+					assetBacklog.shift();
+				}
+			}
+
+			if (!assetBacklog.length) {
+				error = true;
+				errorMessage =
+					'No landscape images available. Disable Image Fill or add landscape photos to your library.';
+				return;
+			}
+		}
+
 		const useSplit = shouldUseSplitView(assetBacklog);
 		const next = assetBacklog.splice(0, useSplit ? 2 : 1);
 
@@ -282,6 +314,11 @@
 			isPortrait(assets[0]) &&
 			isPortrait(assets[1])
 		);
+	}
+
+	/** Returns true when the display is wider than it is tall. */
+	function isDisplayLandscape(): boolean {
+		return window.innerWidth > window.innerHeight;
 	}
 
 	function hasBirthday(assets: api.AssetResponseDto[]) {
