@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 import * as api from '$lib/immichFrameApi';
-import type { ServerAccountSettings, ServerSettings } from '$lib/immichFrameApi';
+import type { AccountAlbumDto, ServerAccountSettings, ServerSettings } from '$lib/immichFrameApi';
 import { adminPasswordStore } from '$lib/stores/admin.store';
 
 // Every admin endpoint authenticates with the dedicated admin password rather
@@ -30,6 +30,10 @@ export function updateSettings(settings: ServerSettings) {
 
 export function testAccount(account: ServerAccountSettings) {
 	return api.testAccount(account, authOpts());
+}
+
+export function getAccountAlbums(account: ServerAccountSettings) {
+	return api.getAccountAlbums(account, authOpts());
 }
 
 // Drop empty values so the server falls back to its defaults instead of

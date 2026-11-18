@@ -42,6 +42,28 @@ namespace ImmichFrame.WebApi.Tests.Mocks
         }
 
         /// <summary>
+        /// Sets up the handler to answer <c>GET albums</c> with the specified JSON payload.
+        /// </summary>
+        public static Mock<HttpMessageHandler> WithAlbums(
+            this Mock<HttpMessageHandler> handler,
+            string albumsJson = "[]")
+        {
+            handler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("albums")),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .ReturnsAsync(() => new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(albumsJson)
+                });
+
+            return handler;
+        }
+
+        /// <summary>
         /// Registers the mock handler as the primary <see cref="HttpMessageHandler"/> for every named
         /// <see cref="System.Net.Http.HttpClient"/> created by <see cref="IHttpClientFactory"/>.
         /// </summary>

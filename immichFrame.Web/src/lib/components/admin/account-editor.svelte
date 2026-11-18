@@ -5,6 +5,7 @@
 	import type { ServerAccountSettings } from '$lib/immichFrameApi';
 	import { accountFields } from './admin-fields';
 	import SettingField from './setting-field.svelte';
+	import AlbumManager from './album-manager.svelte';
 
 	interface Props {
 		account: ServerAccountSettings;
@@ -72,6 +73,10 @@
 			{#if testResult}
 				<Alert color={testResult.success ? 'success' : 'danger'}>{testResult.message}</Alert>
 			{/if}
+		</div>
+
+		<div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-2">
+			<AlbumManager {account} />
 		</div>
 	</CardBody>
 </Card>

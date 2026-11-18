@@ -1,4 +1,6 @@
+using ImmichFrame.Core.Api;
 using ImmichFrame.Core.Exceptions;
+using ImmichFrame.Core.Helpers;
 using ImmichFrame.WebApi.Helpers;
 using ImmichFrame.WebApi.Models;
 using ImmichFrame.WebApi.Services;
@@ -28,6 +30,13 @@ namespace ImmichFrame.WebApi.Controllers
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
         public string? Version { get; set; }
+    }
+
+    public class AccountAlbumDto
+    {
+        public Guid Id { get; set; }
+        public string AlbumName { get; set; } = string.Empty;
+        public long? AssetCount { get; set; }
     }
 
     [ApiController]
@@ -149,6 +158,54 @@ namespace ImmichFrame.WebApi.Controllers
 
             var check = await ImmichServerVersionChecker.CheckAccount(account, _httpClientFactory);
             return new AccountTestResultDto { Success = check.Success, Message = check.Message, Version = check.Version };
+        }
+
+        [HttpPost("Settings/Albums", Name = "GetAccountAlbums")]
+        [ProducesResponseType(typeof(List<AccountAlbumDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
+        public async Task<ActionResult<List<AccountAlbumDto>>> GetAccountAlbums([FromBody] ServerAccountSettings account)
+        {
+            try
+            {
+                account.ValidateAndInitialize();
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            if (string.IsNullOrWhiteSpace(account.ImmichServerUrl))
+            {
+                return Problem(detail: "Immich server URL is required.", statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient(ImmichApiHttpClientExtensions.ImmichApiAccountClient);
+                httpClient.UseApiKey(account.ApiKey);
+                var immichApi = new ImmichApi(account.ImmichServerUrl, httpClient);
+
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                var albums = await immichApi.GetAllAlbumsAsync(null, null, null, null, null, cts.Token);
+
+                var result = albums
+                    .Select(a => new AccountAlbumDto
+                    {
+                        Id = a.Id,
+                        AlbumName = string.IsNullOrWhiteSpace(a.AlbumName) ? "Untitled Album" : a.AlbumName,
+                        AssetCount = a.AssetCount
+                    })
+                    .OrderBy(a => a.AlbumName, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Failed to fetch albums for account {url}: {message}", account.ImmichServerUrl, ex.Message);
+                return Problem(detail: $"Could not load albums from Immich: {ex.Message}", statusCode: StatusCodes.Status502BadGateway);
+            }
         }
     }
 }

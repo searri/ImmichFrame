@@ -31,7 +31,22 @@ namespace ImmichFrame.WebApi.Tests.Controllers
             Environment.SetEnvironmentVariable("IMMICHFRAME_CONFIG_PATH", _configDir);
             Environment.SetEnvironmentVariable("IMMICHFRAME_ADMIN_PASSWORD", AdminPassword);
 
-            var versionHandler = new Mock<HttpMessageHandler>().WithServerVersion();
+            var versionHandler = new Mock<HttpMessageHandler>()
+                .WithServerVersion()
+                .WithAlbums("""
+                    [
+                        {
+                            "id": "11111111-1111-1111-1111-111111111111",
+                            "albumName": "Vacation 2024",
+                            "assetCount": 42
+                        },
+                        {
+                            "id": "22222222-2222-2222-2222-222222222222",
+                            "albumName": "Family",
+                            "assetCount": 100
+                        }
+                    ]
+                    """);
             _factory = new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
                 {
@@ -255,6 +270,38 @@ namespace ImmichFrame.WebApi.Tests.Controllers
             response.EnsureSuccessStatusCode();
             var json = JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
             Assert.That((bool)json["success"]!, Is.True);
+        }
+
+        [Test]
+        public async Task GetAccountAlbums_ReturnsAlbums_WhenAccountIsValid()
+        {
+            var client = CreateAdminClient();
+
+            var body = JsonNode.Parse("""
+                { "ImmichServerUrl": "http://mock-immich-server.com", "ApiKey": "key123" }
+                """);
+            var response = await client.PostAsJsonAsync("/api/Admin/Settings/Albums", body);
+
+            response.EnsureSuccessStatusCode();
+            var json = JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsArray();
+            Assert.That(json.Count, Is.EqualTo(2));
+            // Should be sorted by albumName: "Family", then "Vacation 2024"
+            Assert.That((string)json[0]!["albumName"]!, Is.EqualTo("Family"));
+            Assert.That((string)json[1]!["albumName"]!, Is.EqualTo("Vacation 2024"));
+            Assert.That((string)json[1]!["id"]!, Is.EqualTo("11111111-1111-1111-1111-111111111111"));
+        }
+
+        [Test]
+        public async Task GetAccountAlbums_ReturnsBadRequest_WhenApiKeyMissing()
+        {
+            var client = CreateAdminClient();
+
+            var body = JsonNode.Parse("""
+                { "ImmichServerUrl": "http://mock-immich-server.com" }
+                """);
+            var response = await client.PostAsJsonAsync("/api/Admin/Settings/Albums", body);
+
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
         }
     }
 }
