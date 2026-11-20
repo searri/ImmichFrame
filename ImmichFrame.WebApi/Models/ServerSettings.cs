@@ -63,6 +63,8 @@ public class GeneralSettings : IGeneralSettings
     public bool ImageFill { get; set; } = false;
     public bool PlayAudio { get; set; } = false;
     public string Layout { get; set; } = "splitview";
+    public string PortraitPairMatching { get; set; } = "none";
+    public int PortraitPairColorTolerance { get; set; } = 30;
     public int RenewImagesDuration { get; set; } = 30;
     public List<string> Webcalendars { get; set; } = new();
     public int RefreshAlbumPeopleInterval { get; set; } = 12;

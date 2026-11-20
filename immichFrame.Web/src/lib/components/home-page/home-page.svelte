@@ -16,6 +16,8 @@
 	import { page } from '$app/state';
 	import { ProgressBarLocation, ProgressBarStatus } from '../elements/progress-bar.types';
 	import { isImageAsset, isVideoAsset } from '$lib/constants/asset-type';
+	import { findMatchingPortraitIndex } from '$lib/utils/portraitMatching';
+	import type { MatchMode } from '$lib/utils/portraitMatching';
 
 	interface AssetsState {
 		assets: [string, api.AssetResponseDto, api.AssetFaceResponseDto[], api.AlbumResponseDto[]][];
@@ -258,9 +260,24 @@
 			}
 		}
 
+		// Portrait pair matching: if the front of the backlog is a portrait,
+		// look for a better-matched partner further back and promote it to position 1.
+		if (
+			assetBacklog.length > 1 &&
+			$configStore.layout?.trim().toLowerCase() === 'splitview' &&
+			isPortrait(assetBacklog[0])
+		) {
+			const mode = ($configStore.portraitPairMatching ?? 'none') as MatchMode;
+			const tolerance = $configStore.portraitPairColorTolerance ?? 30;
+			const idx = findMatchingPortraitIndex(assetBacklog, assetBacklog[0], mode, tolerance, isPortrait);
+			if (idx > 1) {
+				const matched = assetBacklog.splice(idx, 1)[0];
+				assetBacklog.splice(1, 0, matched);
+			}
+		}
+
 		const useSplit = shouldUseSplitView(assetBacklog);
 		const next = assetBacklog.splice(0, useSplit ? 2 : 1);
-
 		if (displayingAssets.length) {
 			assetHistory.push(...displayingAssets);
 		}

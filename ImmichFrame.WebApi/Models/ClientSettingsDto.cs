@@ -32,4 +32,6 @@ public class ClientSettingsDto(IClientSettings settings) : IClientSettings
     public bool PlayAudio => settings.PlayAudio;
     public string Layout => settings.Layout;
     public string Language => settings.Language;
+    public string PortraitPairMatching => settings.PortraitPairMatching;
+    public int PortraitPairColorTolerance => settings.PortraitPairColorTolerance;
 }

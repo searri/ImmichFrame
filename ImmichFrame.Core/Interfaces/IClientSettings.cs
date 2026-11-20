@@ -30,5 +30,7 @@ namespace ImmichFrame.Core.Interfaces
         public bool PlayAudio { get; }
         public string Layout { get; }
         public string Language { get; }
+        public string PortraitPairMatching { get; }
+        public int PortraitPairColorTolerance { get; }
     }
 }

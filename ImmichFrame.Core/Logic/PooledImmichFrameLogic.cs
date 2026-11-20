@@ -68,7 +68,7 @@ public class PooledImmichFrameLogic : IAccountImmichFrameLogic, IDisposable
 
     public async Task<IEnumerable<AssetResponseDto>> GetAssets()
     {
-        return await _pool.GetAssets(25);
+        return await _pool.GetAssets(40);
     }
 
     public async Task<AssetResponseDto> GetAssetInfoById(Guid assetId)

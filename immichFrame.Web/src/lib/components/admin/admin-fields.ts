@@ -43,6 +43,21 @@ export const generalSections: SectionDef[] = [
 				step: '0.5'
 			},
 			{ key: 'layout', label: 'Layout', type: 'select', options: ['single', 'splitview'] },
+		{
+			key: 'portraitPairMatching',
+			label: 'Portrait pair matching (splitview only)',
+			type: 'select',
+			options: ['none', 'location', 'color', 'person', 'any'],
+			help: 'When showing two portrait images side-by-side, prefer pairs that share a similar dominant color, the same location, or the same person.'
+		},
+		{
+			key: 'portraitPairColorTolerance',
+			label: 'Portrait pair color tolerance (degrees, 0–180)',
+			type: 'number',
+			min: 0,
+			max: 180,
+			help: 'How close dominant hues must be to count as a color match (default 30). Only used when matching is "color" or "any".'
+		},
 			{
 				key: 'style',
 				label: 'Style',

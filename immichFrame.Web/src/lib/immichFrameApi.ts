@@ -326,6 +326,8 @@ export type ClientSettingsDto = {
     playAudio?: boolean;
     layout?: string | null;
     language?: string | null;
+    portraitPairMatching?: string | null;
+    portraitPairColorTolerance?: number | null;
 };
 export type IWeather = {
     location?: string | null;
